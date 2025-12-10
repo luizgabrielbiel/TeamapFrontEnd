@@ -64,7 +64,7 @@ const request = async (endpoint, options = {}) => {
     
     // Verificar se é erro de rede
     if (error.message === 'Failed to fetch') {
-      throw new Error('Não foi possível conectar ao servidor. Verifique se o XAMPP está rodando.');
+      throw new Error('Não foi possível conectar ao servidor. Verifique se o servidor está rodando.');
     }
     
     throw error;
