@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import './Login.css';
 import logo from '../assets/Logo.png';
+import { authAPI } from '../services/api';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -12,6 +14,7 @@ const Login = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -44,13 +47,25 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      console.log('Login data:', formData);
-      // API
-      alert('Login realizado! (Front-end only)');
+      setLoading(true);
+      try {
+        const response = await authAPI.login(formData.email, formData.password);
+        console.log('Login sucesso:', response);
+        
+        // Redirecionar para o mapa
+        navigate('/mapatea');
+      } catch (error) {
+        console.error('Erro no login:', error);
+        setErrors({ 
+          general: error.message || 'Erro ao fazer login. Verifique suas credenciais.' 
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -83,6 +98,12 @@ const Login = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="login-form">
+              {errors.general && (
+                <div className="error-alert">
+                  {errors.general}
+                </div>
+              )}
+              
               {/* Email Field */}
               <div className="form-group">
                 <label htmlFor="email">Email</label>
@@ -126,20 +147,20 @@ const Login = () => {
                 {errors.password && <span className="error-message">{errors.password}</span>}
               </div>
 
-          
+              {/* Forgot Password */}
               <div className="form-options">
                 <label className="remember-me">
                   <input type="checkbox" />
                   <span>Lembrar de mim</span>
                 </label>
-                <Link to="/esqueceusenha" className="forgot-password">
+                <Link to="/esqueceu-senha" className="forgot-password">
                   Esqueceu a senha?
                 </Link>
               </div>
 
               {/* Submit Button */}
-              <button type="submit" className="btn-login">
-                Entrar
+              <button type="submit" className="btn-login" disabled={loading}>
+                {loading ? 'Entrando...' : 'Entrar'}
               </button>
 
               {/* Divider */}

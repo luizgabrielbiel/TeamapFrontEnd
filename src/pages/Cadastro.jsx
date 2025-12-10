@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, User, UserPlus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff, User, UserPlus, Loader2 } from 'lucide-react';
 import './Cadastro.css';
 import logo from '../assets/Logo.png';
+import { authAPI } from '../services/api'; // ✅ Importar a API
 
 const Cadastro = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,6 +17,8 @@ const Cadastro = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false); // ✅ Estado de carregamento
+  const [apiError, setApiError] = useState(''); // ✅ Erro da API
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,6 +28,9 @@ const Cadastro = () => {
     }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    if (apiError) {
+      setApiError(''); // ✅ Limpar erro da API ao digitar
     }
   };
 
@@ -58,12 +65,43 @@ const Cadastro = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  // ✅ FUNÇÃO PRINCIPAL - Conectar com a API
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiError(''); // Limpar erros anteriores
     
-    if (validateForm()) {
-      console.log('Cadastro data:', formData);
-      alert('Cadastro realizado! (Front-end only)');
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true); // Ativar loading
+
+    try {
+      // ✅ Chamar a API de registro
+      const response = await authAPI.register(
+        formData.name,
+        formData.email,
+        formData.password
+      );
+
+      console.log('Cadastro realizado com sucesso:', response);
+
+      // ✅ Mostrar mensagem de sucesso
+      alert('Cadastro realizado com sucesso! Você será redirecionado...');
+
+      // ✅ Redirecionar para o mapa ou dashboard
+      setTimeout(() => {
+        navigate('/mapatea');
+      }, 1500);
+
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+      
+      // ✅ Exibir erro da API
+      setApiError(error.message || 'Erro ao realizar cadastro. Tente novamente.');
+      
+    } finally {
+      setLoading(false); // Desativar loading
     }
   };
 
@@ -94,6 +132,13 @@ const Cadastro = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="cadastro-form">
+              {/* ✅ Mostrar erro da API */}
+              {apiError && (
+                <div className="alert alert-error">
+                  {apiError}
+                </div>
+              )}
+
               {/* Name Field */}
               <div className="form-group">
                 <label htmlFor="name">Nome completo</label>
@@ -106,6 +151,7 @@ const Cadastro = () => {
                     placeholder="Seu nome"
                     value={formData.name}
                     onChange={handleChange}
+                    disabled={loading}
                   />
                 </div>
                 {errors.name && <span className="error-message">{errors.name}</span>}
@@ -123,6 +169,7 @@ const Cadastro = () => {
                     placeholder="seu@email.com"
                     value={formData.email}
                     onChange={handleChange}
+                    disabled={loading}
                   />
                 </div>
                 {errors.email && <span className="error-message">{errors.email}</span>}
@@ -140,11 +187,13 @@ const Cadastro = () => {
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={handleChange}
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     className="toggle-password"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -164,11 +213,13 @@ const Cadastro = () => {
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={handleChange}
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     className="toggle-password"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    disabled={loading}
                   >
                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -179,7 +230,7 @@ const Cadastro = () => {
               {/* Terms */}
               <div className="terms-section">
                 <label className="terms-checkbox">
-                  <input type="checkbox" required />
+                  <input type="checkbox" required disabled={loading} />
                   <span>
                     Concordo com os{' '}
                     <Link to="/termos">Termos de Uso</Link>
@@ -190,8 +241,19 @@ const Cadastro = () => {
               </div>
 
               {/* Submit Button */}
-              <button type="submit" className="btn-cadastro">
-                Criar conta
+              <button 
+                type="submit" 
+                className="btn-cadastro"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={20} className="spinner" />
+                    Criando conta...
+                  </>
+                ) : (
+                  'Criar conta'
+                )}
               </button>
 
               {/* Divider */}
